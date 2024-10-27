@@ -110,13 +110,10 @@ addEventListener('fetch', event => {
 * @url 需要分析的Url地址
 */
 function getFavicon(url){
-  if(url.match(/https{0,1}:\/\//)){
-    //return "https://ui-avatars.com/api/?bold=true&size=36&background=0D8ABC&color=fff&rounded=true&name=" + url.split('//')[1];
-    return "https://www.google.cn/s2/favicons?sz=64&domain_url=" + url;
-  }else{
-    //return "https://ui-avatars.com/api/?bold=true&size=36&background=0D8ABC&color=fff&rounded=true&name=" + url;
-    return "https://www.google.cn/s2/favicons?sz=64&domain_url=http://" + url;
-  } 
+  if(!url.match(/https?:\/\//)){
+    url = 'http://' + url;
+  }
+  return `https://www.bing.com/favicon.ico?url=${url}`;
 }
 
 /** Render Functions
@@ -124,7 +121,18 @@ function getFavicon(url){
  */
 
 function renderIndex(){
-  const footer = el('footer',[],el('div',['class="footer"'],'Powered by' + el('a',['class="ui label"','href="https://github.com/sleepwood/cf-worker-dir"','target="_blank"'],el('i',['class="github icon"'],"") + 'Cf-Worker-Dir') + ' &copy; Base on ' + el('a',['class="ui label"'],el('i',['class="balance scale icon"'],"") + 'MIT License')));
+  const footerContent = [
+    "Powered by",
+    el('a', ['class="ui label"', 'href="https://github.com/sleepwood/cf-worker-dir"', 'target="_blank"'], 
+      el('i', ['class="github icon"'], "") + 'Cf-Worker-Dir'
+    ),
+    ' &copy; Base on ',
+    el('a', ['class="ui label"'], 
+      el('i', ['class="balance scale icon"'], "") + 'MIT License'
+    )
+  ].join(' ');
+
+  const footer = el('footer', [], el('div', ['class="footer"'], footerContent));
   return renderHeader() + renderMain() + footer;
 }
 
@@ -146,7 +154,7 @@ function renderHeader(){
 
 function renderMain() {
   var main = config.lists.map((item) => {
-    const card = (url,name,desc)=> el('a',['class="card"',`href=${url}`,'target="_blank"'],el('div',['class="content"'],el('img',['class="left floated avatar ui image"',`src=${getFavicon(url)}`],"") + el('div',['class="header"'],name) + el('div',['class="meta"'],desc)));
+    const card = (url,name,desc)=> el('a',['class="card"',`href=${url}`,'target="_blank"'],el('div',['class="content"'],el('img',['class="left floated avatar ui image"',`src=${getFavicon(url)}`, `onerror="handleImageError(this)"`, `data-original-url="${url}"`],"") + el('div',['class="header"'],name) + el('div',['class="meta"'],desc)));
     const divider = el('h4',['class="ui horizontal divider header"'],el('i',[`class="${item.icon} icon"`],"")+item.name);
 
     var content = el('div',['class="ui four stackable cards"'],item.list.map((link) =>{
@@ -195,25 +203,28 @@ function renderHTML(index,seller) {
       $('#sengine a').on('click', function (e) {
         $('#sengine a.active').toggleClass('active');
         $(e.target).toggleClass('active');
-        $('#search-fav').attr('src',$(e.target).data('url').match(`+/https{0,1}:\/\/\S+\//+`)[0] + '/favicon.ico') ;
+        $('#search-fav').attr('src', $(e.target).data('url').match(/https?:\\/\\/\\S+\\//)[0] + '/favicon.ico');
       });
       $('.search').on('click', function (e) {
           var url = $('#sengine a.active').data('url');
-          url = url.replace(`+/\$s/+`,$('#searchinput').val());
+          url = url.replace(/\\$s/, $('#searchinput').val());
           window.open(url);
       });
-      /* 鼠标聚焦时，回车事件 */
-      $("#searchinput").bind("keypress", function(){
+      $("#searchinput").bind("keypress", function(event){
           if (event.keyCode == 13){
-          // 触发需要调用的方法
           $(".search").click();
           }
       });
       $('#menubtn').on('click', function (e) {
           $('#seller').modal('show');
       });
+
+      function handleImageError(img) {
+        img.onerror = null;
+        let domain = new URL(img.getAttribute('data-original-url')).hostname;
+        img.src = 'https://' + domain + '/favicon.ico';
+      }
     </script>
   </body>
-
   </html>`
 }
